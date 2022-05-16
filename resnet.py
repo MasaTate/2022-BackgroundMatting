@@ -36,7 +36,7 @@ class ResNet(nn.Module):
     """
     layers : Number of each block
     """
-    def __init__(self, block, layers, image_channels, num_classes):
+    def __init__(self, block, layers, image_channels):
         super(ResNet, self).__init__()
         self.in_channels = 64
         self.conv1 = nn.Conv2d(image_channels, 64, kernel_size=7, stride=2, padding=3)
@@ -50,25 +50,21 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, layers[2], out_channels=256, stride=2)
         self.layer4 = self._make_layer(block, layers[3], out_channels=512, stride=2)
 
-        self.avgpool = nn.AdaptiveAvgPool2d((1,1))
-        self.fc = nn.Linear(512*4, num_classes)
-
     def forward(self, x):
+        x0 = x
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
+        x1 = x
         x = self.maxpool(x)
-
         x = self.layer1(x)
+        x2 = x
         x = self.layer2(x)
+        x3 = x
         x = self.layer3(x)
         x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = x.reshape(x.shape[0], -1)
-        x = self.fc()
-
-        return x
+        x4 = x
+        return x0, x1, x2, x3, x4
 
     def _make_layer(self, block, num_residual_blocks, out_channels, stride):
         identity_downsample = None
@@ -84,5 +80,5 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-def ResNet50(img_channels = 3, num_classes = 1000):
-    return ResNet(block,[3,4,6,3], img_channels, num_classes)
+def ResNet50(img_channels = 3):
+    return ResNet(block,[3,4,6,3], img_channels)
