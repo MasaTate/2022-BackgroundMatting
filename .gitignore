@@ -130,3 +130,6 @@ dmypy.json
 
 # ignore DS_Store
 .DS_Store
+
+#ignore data
+/data
