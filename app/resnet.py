@@ -10,12 +10,12 @@ class block(nn.Module):
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.conv3 = nn.Conv2d(out_channels, out_channels*self.expansion, kernel_size=1, stride=1, padding=0)
-        self.bn3 = nn.BatchNorm2d(out_channels)
+        self.bn3 = nn.BatchNorm2d(out_channels*self.expansion)
         self.relu = nn.ReLU()
         self.identity_downsample = identity_downsample
 
 
-    def foward(self, x):
+    def forward(self, x):
         identity = x.clone()
         
         x = self.conv1(x)

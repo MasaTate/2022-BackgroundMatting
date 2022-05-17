@@ -5,11 +5,15 @@ RUN apt-get update && apt-get install -y tzdata
 # timezone setting
 ENV TZ=Asia/Tokyo 
 
+
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y \
     git 
-    
+
+RUN apt-key del 3bf863cc
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
+
 RUN apt-get update
 RUN apt-get install -y python3 python3-pip
 RUN pip3 install torch torchvision
