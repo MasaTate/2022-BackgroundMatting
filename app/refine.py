@@ -1,4 +1,4 @@
-from statistics import mode
+from typing import Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -54,11 +54,34 @@ class Refine(nn.Module):
         W_half = W_full // 2
         H_quat = H_full // 4
         W_quat = W_full // 4
-
+        
+        #upsample err, (hid, alp, fgr), (src, bck) to quater size of original resolution
         err = F.interpolate(err, (H_quat, W_quat), mode="bilinear", align_corners=False)
-        x = F.interpolate(torch.cat([alp, fgr, hid], (H_quat, W_quat), mode="bilinear", align_corners=False))
+        x = F.interpolate(torch.cat([hid, alp, fgr], dim=1), (H_quat, W_quat), mode="bilinear", align_corners=False)
+        y = F.interpolate(torch.cat([src, bck], dim=1), (H_quat, W_quat), mode="bilinear", align_corners=False)
 
+
+        #select patches from err
         selected = self.select_pixel_to_refine(err)
+        index = torch.nonzero(selected.squeeze(1)) #indecies of non zero pixel (B, H, W). index.shape => torch.Size([Patchsize,3])
+        index = index[:,0], index[:,1], index[:,2]
+
+        #crop patches from x
+        x = self.crop_patches(x, index, 2, 3) #size=2,padding=3, that means 8*8 patches
+        #crop patches from I and B
+        y = self.crop_patches(y, index, 2, 3) #size=2,padding=3, that means 8*8 patches
+        
+        #pass conv & BN & ReLU
+        x = self.conv1(torch.concat([x,y], dim=1))
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+
+        #
+
+
 
     def select_pixel_to_refine(self, err: torch.Tensor()):
         """
@@ -70,12 +93,35 @@ class Refine(nn.Module):
         """
         #size
         err_b, _, err_h, err_w = err.shape
+        #make err 2 dimentional
         err = err.view(err_b, -1)
+        #indeces of top k pixel
         indices = err.topk(self.k, dim=1, sorted=False).indices
+        #selected pixels in indeices is set to 1.
         selected = torch.zeros_like(err)
         selected = selected.scatter_(1, indices, 1.)
         selected = selected.view(err_b, 1, err_h, err_w)
 
         return selected
 
-    
+    def crop_patches(self,
+                    image: torch.Tensor,
+                    index: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+                    size: int,
+                    padding: int):
+        """
+        Input : image (B, C, H, W), index (Tuple[(P,...)]), size, padding
+
+        1. patch height & width length is (size + 2 * padding)
+        2. patch stride is (size) 
+        3. crop all indexed patches from images
+        """
+        if padding > 0:
+            #add padding to each side of height & width
+            image = F.pad(image,(padding,padding,padding,padding))
+
+        patch_size = size + padding * 2
+        all_patches = image.permute(0,2,3,1).unfold(1,patch_size,size).unfold(2,patch_size,size)
+        selected_patches = all_patches[index[0],index[1],index[2]]
+
+        return selected_patches
