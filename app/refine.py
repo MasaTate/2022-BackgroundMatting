@@ -33,8 +33,8 @@ class Refine(nn.Module):
         #Concatenate 4*4 patches and I, B patches -> channels[2] + 3 + 3
         self.conv3 = nn.Conv2d(1+channels[2]+6, channels[3], kernel_size=3, bias=False)
         self.bn3 = nn.BatchNorm2d(channels[3])
-        self.conv2 = nn.Conv2d(channels[3], channels[4], kernel_size=3, bias=False)
-        self.bn2 = nn.BatchNorm2d(channels[4])
+        self.conv4 = nn.Conv2d(channels[3], channels[4], kernel_size=3, bias=False)
+        self.bn4 = nn.BatchNorm2d(channels[4])
 
         self.relu = nn.ReLU(True)
 
@@ -72,14 +72,28 @@ class Refine(nn.Module):
         y = self.crop_patches(y, index, 2, 3) #size=2,padding=3, that means 8*8 patches
         
         #pass conv & BN & ReLU
-        x = self.conv1(torch.concat([x,y], dim=1))
+        x = self.conv1(torch.cat([x,y], dim=1))
         x = self.bn1(x)
         x = self.relu(x)
         x = self.conv2(x)
         x = self.bn2(x)
         x = self.relu(x)
 
-        #
+        #upsample x
+        x = F.interpolate(x, 8, mode="nearest")
+        
+        #crop patches from I and B in original resolution
+        y = self.crop_patches(torch.cat([src, bck], dim=1), index, 4, 2) #size=4,padding=2, that means 8*8 patches
+        
+        #pass conv & BN & ReLU
+        x = self.conv3(torch.cat([x,y], dim=1))
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.conv4(x)
+
+        #create out tensor & swap patches
+        out = F.interpolate(torch.cat([alp, fgr], dim=1), (H_full, W_full), mode="bilinear", align_corners=False)
+        out = self.swap_patches(x, out, index)
 
 
 
@@ -125,3 +139,11 @@ class Refine(nn.Module):
         selected_patches = all_patches[index[0],index[1],index[2]]
 
         return selected_patches
+
+    
+    def swap_patches(self, x, out, index):
+        """
+        Input : Refined patches, Coarse mat, Patch indecies
+
+        Output : Swapped map 
+        """
