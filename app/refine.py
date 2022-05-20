@@ -15,7 +15,7 @@ class Refine(nn.Module):
     6. upsample alp & fgr to original resolution
     7. swap in refined patches
 
-    Output : Alpha, Foreground Residual
+    Output : Alpha, Foreground Residual, Refined Region
     """
     def __init__(self, k_patches: int):
         super().__init__()
@@ -63,7 +63,7 @@ class Refine(nn.Module):
 
         #select patches from err
         selected = self.select_pixel_to_refine(err)
-        index = torch.nonzero(selected.squeeze(1)) #indecies of non zero pixel (B, H, W). index.shape => torch.Size([Patchsize,3])
+        index = torch.nonzero(selected.squeeze(1)) #indices of non zero pixel (B, H, W). index.shape => torch.Size([number of patches,3])
         index = index[:,0], index[:,1], index[:,2]
 
         #crop patches from x
@@ -94,6 +94,11 @@ class Refine(nn.Module):
         #create out tensor & swap patches
         out = F.interpolate(torch.cat([alp, fgr], dim=1), (H_full, W_full), mode="bilinear", align_corners=False)
         out = self.swap_patches(x, out, index)
+
+        alp = out[:, :1]
+        fgr = out[:, 1:]
+
+        return alp, fgr, selected
 
 
 
@@ -143,7 +148,28 @@ class Refine(nn.Module):
     
     def swap_patches(self, x, out, index):
         """
-        Input : Refined patches, Coarse mat, Patch indecies
+        Input : Refined patches, Coarse mat, Patch indices
 
+        1. Reshape out to torch.Tensor(B, number of height patches, number of width patches, channel, patch height, patch width)
+        2. Swap x[idx[0], idx[1], idx[2]] in x
+        3. Revise the shape of out
+        
         Output : Swapped map 
         """
+        #define size
+        B_x, C_x, H_x, W_x = x.shape
+        B_o, C_o, H_o, W_o = out.shape
+
+        #Reshape out tensor
+        out = out.view(B_o, C_o, H_o // H_x, H_x, W_o // W_x, W_x)
+        out = out.permute(0, 2, 4, 1, 3, 5) 
+
+         #Swap
+        out[index[0], index[1], index[2]] = x
+
+        #Revise shape of out tensor
+        out = out.permute(0, 3, 1, 4, 2, 5).view(B_o, C_o, H_o, W_o)
+
+        return out
+
+        
