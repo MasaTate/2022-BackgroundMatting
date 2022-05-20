@@ -171,5 +171,3 @@ class Refine(nn.Module):
         out = out.permute(0, 3, 1, 4, 2, 5).view(B_o, C_o, H_o, W_o)
 
         return out
-
-        

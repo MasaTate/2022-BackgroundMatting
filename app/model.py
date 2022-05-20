@@ -1,10 +1,13 @@
 from turtle import forward
+from soupsieve import select
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.models.segmentation.deeplabv3 import ASPP
 from resnet import ResNet50
 from decoder import Decoder
 from refine import Refine
+
 
 
 class Base(nn.Module):
@@ -59,4 +62,39 @@ class BaseNet(Base):
         hid = x[:, 5:].relu_()
         return alp, fgr, err, hid
 
-class WholeNet(BaseNet)
+class WholeNet(BaseNet):
+    """
+    Whole Net inherits BaseNet.
+    BaseNet consists of Base Network & Refinement Network.
+    """
+
+    def __init__(self, coarse_scale: float = 1/4, k_patches: int = 16):
+        assert coarse_scale <= 1/2
+        self.coarse_scale = coarse_scale
+        self.refine = Refine(k_patches)
+        super().__init__()
+
+    def forward(self, src, bck):
+        assert src.shape == bck.shape
+        coarse_src = F.interpolate(src, self.coarse_scale, mode="bilinear", align_corners=False, recompute_scale_factor=True)
+        coarse_bck = F.interpolate(bck, self.coarse_scale, mode="bilinear", align_corners=False, recompute_scale_factor=True)
+
+        #Base
+        x = torch.cat([coarse_src, coarse_bck], dim=1)
+        x0, x1, x2, x3, x4 = self.backbone(x)
+        x4 = self.aspp(x4)
+        x = self.decoder(x0, x1, x2, x3, x4)
+        coarse_alp = x[:, 0:1].clamp_(0., 1.)
+        coarse_fgr = x[:, 1:4].add(src).clamp_(0., 1.)
+        coarse_err = x[:, 4:5].clamp_(0., 1.)
+        coarse_hid = x[:, 5:].relu_()
+
+        #Refine
+        alp, fgr, selected = Refine(src, bck, coarse_alp, coarse_fgr, coarse_err, coarse_hid)
+
+        #Clamp
+        alp = alg.clamp_(0., 1.)
+        fgr = fgr.add_(src).clamp_(0., 1.)
+        coarse_fgr = coarse_src.add_(coarse_fgr).clamp_(0., 1.)
+
+        return alp, fgr, coarse_alp, coarse_fgr, coarse_err, selected
