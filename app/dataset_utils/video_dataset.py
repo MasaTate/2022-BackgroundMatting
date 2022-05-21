@@ -13,6 +13,14 @@ class VideoDataset(Dataset):
         return self.num_frame
 
     def __getitem__(self, index):
+        """
+        read frame of indices
+        """
+        if isinstance(index, slice):
+            return[self[k] for k in range(*index.indices(len(self)))]
+
+        if self.cap.get(cv2.CAP_PROP_POS_FRAMES) != index:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, index)
         #read frame from video
         ret, img = self.cap.read()
         #change channel order
