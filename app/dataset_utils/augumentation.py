@@ -20,7 +20,7 @@ class PairRandomAffineAndResize:
 
     def __call__(self, *x):
         if not len(x):
-            return
+            return []
 
         width, height = x[0].size
         scale_factor = max(self.size[0] / height, self.size[1] / width)
@@ -82,3 +82,40 @@ class PairRandomBoxBlur(RandomBoxBlur):
             x = [x_i.filter(filter) for x_i in x]
         return x
 
+class RandomSharpn:
+    def __init__(self, prob):
+        self.prob = prob
+        self.filter = ImageFilter.SHARPEN
+
+    def __call__(self, img):
+        #the probability of sharpening is prob
+        if torch.rand(1) < self.prob:
+            img = img.filter(self.filter)
+        return img
+
+class PairRandomSharpen(RandomSharpn):
+    def __call__(self, *x):
+        if torch.rand(1) < self.prob:
+            x = [x_i.filter(self.filter) for x_i in x]
+        return x
+
+class PairCompose(T.Compose):
+    def __call__(self, *x):
+        for transform in self.transforms:
+            x = transform(*x)
+        return x
+
+class PairApply:
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, *x):
+        return [self.transforms(x_i) for x_i in x]
+
+class PairApplyOnlyAtIndices:
+    def __init__(self, indices, transforms):
+        self.indices = indices
+        self.transfoms = transforms
+    
+    def __call__(self, *x):
+        return [self.transfoms(x_i) if i in self.indices else x_i for i, x_i in enumerate(x)]

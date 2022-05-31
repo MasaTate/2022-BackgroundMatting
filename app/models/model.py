@@ -4,9 +4,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models.segmentation.deeplabv3 import ASPP
-from resnet import ResNet50
-from decoder import Decoder
-from refine import Refine
+from .resnet import ResNet50
+from .decoder import Decoder
+from .refine import Refine
 
 
 
@@ -31,7 +31,7 @@ class Base(nn.Module):
         state_dict = {key.replace('classifier.classifier.0', 'aspp'): val for key, val in state_dict.items()}
 
         #only load weights that matched in key and shape. Ignore other weights.
-        matched , total = 0
+        matched , total = 0, 0
         original_state_dict = self.state_dict()
         for key in original_state_dict.keys():
             total +=1
@@ -49,7 +49,7 @@ class BaseNet(Base):
     BaseNet consists of Backbone(ResNet50), ASPP from DeepLabV3, Decoder., 
     """
     def __init__(self):
-        super().__init__()
+        super().__init__(input_channels=6, output_channels=(1+3+1+32))
 
     def forward(self, src, bck):
         x = torch.cat([src, bck], dim=1)
@@ -68,16 +68,19 @@ class WholeNet(BaseNet):
     BaseNet consists of Base Network & Refinement Network.
     """
 
-    def __init__(self, coarse_scale: float = 1/4, k_patches: int = 16):
+    def __init__(self, coarse_scale: float = 1/4, k_patches: int = 5000):
         assert coarse_scale <= 1/2
+        super().__init__()
         self.coarse_scale = coarse_scale
         self.refine = Refine(k_patches)
-        super().__init__()
+        
 
     def forward(self, src, bck):
-        assert src.shape == bck.shape
-        coarse_src = F.interpolate(src, self.coarse_scale, mode="bilinear", align_corners=False, recompute_scale_factor=True)
-        coarse_bck = F.interpolate(bck, self.coarse_scale, mode="bilinear", align_corners=False, recompute_scale_factor=True)
+        assert src.size() == bck.size()
+        assert src.size(2) // 4 * 4 == src.size(2) and src.size(3) // 4 * 4 == src.size(3)
+
+        coarse_src = F.interpolate(src, scale_factor=self.coarse_scale, mode="bilinear", align_corners=False, recompute_scale_factor=True)
+        coarse_bck = F.interpolate(bck, scale_factor=self.coarse_scale, mode="bilinear", align_corners=False, recompute_scale_factor=True)
 
         #Base
         x = torch.cat([coarse_src, coarse_bck], dim=1)
@@ -85,15 +88,15 @@ class WholeNet(BaseNet):
         x4 = self.aspp(x4)
         x = self.decoder(x0, x1, x2, x3, x4)
         coarse_alp = x[:, 0:1].clamp_(0., 1.)
-        coarse_fgr = x[:, 1:4].add(src).clamp_(0., 1.)
+        coarse_fgr = x[:, 1:4]
         coarse_err = x[:, 4:5].clamp_(0., 1.)
-        coarse_hid = x[:, 5:].relu_()
+        coarse_hid = x[:, 5: ].relu_()
 
         #Refine
-        alp, fgr, selected = Refine(src, bck, coarse_alp, coarse_fgr, coarse_err, coarse_hid)
+        alp, fgr, selected = self.refine(src, bck, coarse_alp, coarse_fgr, coarse_err, coarse_hid)
 
-        #Clamp
-        alp = alg.clamp_(0., 1.)
+        #Clamp to make output 0~1
+        alp = alp.clamp_(0., 1.)
         fgr = fgr.add_(src).clamp_(0., 1.)
         coarse_fgr = coarse_src.add_(coarse_fgr).clamp_(0., 1.)
 

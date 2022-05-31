@@ -31,7 +31,7 @@ class Refine(nn.Module):
         self.bn2 = nn.BatchNorm2d(channels[2])
 
         #Concatenate 4*4 patches and I, B patches -> channels[2] + 3 + 3
-        self.conv3 = nn.Conv2d(1+channels[2]+6, channels[3], kernel_size=3, bias=False)
+        self.conv3 = nn.Conv2d(channels[2]+6, channels[3], kernel_size=3, bias=False)
         self.bn3 = nn.BatchNorm2d(channels[3])
         self.conv4 = nn.Conv2d(channels[3], channels[4], kernel_size=3, bias=False)
         self.bn4 = nn.BatchNorm2d(channels[4])
@@ -57,8 +57,8 @@ class Refine(nn.Module):
         
         #upsample err, (hid, alp, fgr), (src, bck) to quater size of original resolution
         err = F.interpolate(err, (H_quat, W_quat), mode="bilinear", align_corners=False)
-        x = F.interpolate(torch.cat([hid, alp, fgr], dim=1), (H_quat, W_quat), mode="bilinear", align_corners=False)
-        y = F.interpolate(torch.cat([src, bck], dim=1), (H_quat, W_quat), mode="bilinear", align_corners=False)
+        x = F.interpolate(torch.cat([hid, alp, fgr], dim=1), (H_half, W_half), mode="bilinear", align_corners=False)
+        y = F.interpolate(torch.cat([src, bck], dim=1), (H_half, W_half), mode="bilinear", align_corners=False)
 
 
         #select patches from err
