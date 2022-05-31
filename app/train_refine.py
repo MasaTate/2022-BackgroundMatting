@@ -90,7 +90,7 @@ def main(train_rgb_path,
         if key in pretrained_state_dict and original_state_dict[key].shape == pretrained_state_dict[key].shape:
             original_state_dict[key] = pretrained_state_dict[key]
             matched += 1
-    
+    model.load_state_dict(pretrained_state_dict)
     print(f'Loaded pretrained state_dict: {matched}/{total} matched')
 
     #optimizer
@@ -135,7 +135,7 @@ def main(train_rgb_path,
 
             if (i+1) % 10 == 0:
                 writer.add_scalar('loss', loss, step)
-            if (i+1) % 2000 == 0:
+            if (i+1) % 50 == 0:
                 writer.add_image('train_alp_pred', make_grid(alp_pred, nrow=5), step)
                 writer.add_image('train_fgr_pred', make_grid(fgr_pred, nrow=5), step)
                 writer.add_image('train_com_pred', make_grid(fgr_pred * alp_pred, nrow=5), step)
@@ -147,7 +147,7 @@ def main(train_rgb_path,
             del alp_pred, fgr_pred, alp_coarse_pred, fgr_coarse_pred, err_coarse_pred
 
             #validation
-            if (i+1) % 5000 == 0:             
+            if (i+1) % 50 == 0:             
                 model.eval()
                 loss_total = 0
                 count = 0
@@ -165,9 +165,17 @@ def main(train_rgb_path,
                         loss = calc_loss(alp_pred, fgr_pred, alp_coarse_pred, fgr_coarse_pred, err_coarse_pred, alp_in, fgr_in)
                         loss_total += loss.cpu().item() * batch_size
                         count += batch_size
-                writer.add_scalar('valid_loss', loss_total / count, step)
+                        """
+                        writer.add_image('valid_alp_pred', make_grid(alp_pred, nrow=5), step)
+                        writer.add_image('valid_fgr_pred', make_grid(fgr_pred, nrow=5), step)
+                        writer.add_image('valid_com_pred', make_grid(fgr_pred * alp_pred, nrow=5), step)
+                        writer.add_image('valid_err_pred', make_grid(err_coarse_pred, nrow=5), step)
+                        writer.add_image('valid_src_in', make_grid(src_in, nrow=5), step)
+                        writer.add_image('valid_bgr_in', make_grid(bck_in, nrow=5), step)
+                        """
+                    writer.add_scalar('valid_loss', loss_total / count, step)
 
-            if (step + 1) % 5000 == 0:
+            if (step + 1) % 50 == 0:
                 torch.save(model.state_dict(), checkpoint_path + f'/checkpoint_epoch{epoch}_iter{step}.pth')
 
         torch.save(model.state_dict(), checkpoint_path + f'/checkpoint_epoch{epoch}.pth')
