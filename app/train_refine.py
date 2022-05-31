@@ -31,7 +31,7 @@ def main(train_rgb_path,
         num_workers, 
         pretrained_model, 
         epochs):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')
     print("device : "+str(device))
 
     #train dataset
@@ -90,7 +90,7 @@ def main(train_rgb_path,
         if key in pretrained_state_dict and original_state_dict[key].shape == pretrained_state_dict[key].shape:
             original_state_dict[key] = pretrained_state_dict[key]
             matched += 1
-    model.load_state_dict(pretrained_state_dict)
+    model.load_state_dict(original_state_dict)
     print(f'Loaded pretrained state_dict: {matched}/{total} matched')
 
     #optimizer
@@ -122,9 +122,41 @@ def main(train_rgb_path,
             bck_in = bck_in.to(device)
             fgr_in, alp_in, bck_in = random_corp(fgr_in, alp_in, bck_in)
             
-            #composite foreground residual onto background
-            src_in = fgr_in * alp_in + bck_in * (1 - alp_in)
+            src_in = bck_in.clone()
 
+            #background shadow augumentation (same as original code)
+            aug_shadow_index = torch.rand(len(src_in)) < 0.3
+            if aug_shadow_index.any():
+                aug_shadow = alp_in[aug_shadow_index].mul(0.3 * random.random())
+                aug_shadow = T.RandomAffine(degrees=(-5, 5), translate=(0.2, 0.2), scale=(0.5, 1.5), shear=(-5, 5))(aug_shadow)
+                aug_shadow = kornia.filters.box_blur(aug_shadow, (random.choice(range(20, 40)),) * 2)
+                src_in[aug_shadow_index] = src_in[aug_shadow_index].sub_(aug_shadow).clamp_(0, 1)
+                del aug_shadow
+            del aug_shadow_index
+            
+            #composite foreground residual onto background
+            src_in = fgr_in * alp_in + src_in * (1 - alp_in)
+
+            #noise augumentation (same as original code)
+            aug_noise_index = torch.rand(len(src_in)) < 0.4
+            if aug_noise_index.any():
+                src_in[aug_noise_index] = src_in[aug_noise_index].add_(torch.randn_like(src_in[aug_noise_index]).mul_(0.03 * random.random())).clamp_(0, 1)
+                bck_in[aug_noise_index] = bck_in[aug_noise_index].add_(torch.randn_like(bck_in[aug_noise_index]).mul_(0.03 * random.random())).clamp_(0, 1)
+            del aug_noise_index
+
+            #background jitter augumentation
+            aug_jitter_index = torch.rand(len(src_in)) < 0.8
+            if aug_jitter_index.any():
+                bck_in[aug_jitter_index] = kornia.augmentation.ColorJitter(0.18, 0.18, 0.18, 0.1)(bck_in[aug_jitter_index])
+            del aug_jitter_index
+
+            #background affine augumentation
+            aug_affine_index = torch.rand(len(bck_in)) < 0.3
+            if aug_affine_index.any():
+                bck_in[aug_affine_index] = T.RandomAffine(degrees=(-1, 1), translate=(0.01, 0.01))(bck_in[aug_affine_index])
+            del aug_affine_index
+
+            #predict
             alp_pred, fgr_pred, alp_coarse_pred, fgr_coarse_pred, err_coarse_pred, _ = model(src_in, bck_in)
             loss = calc_loss(alp_pred, fgr_pred, alp_coarse_pred, fgr_coarse_pred, err_coarse_pred, alp_in, fgr_in)
 
@@ -135,7 +167,7 @@ def main(train_rgb_path,
 
             if (i+1) % 10 == 0:
                 writer.add_scalar('loss', loss, step)
-            if (i+1) % 50 == 0:
+            if (i+1) % 2000 == 0:
                 writer.add_image('train_alp_pred', make_grid(alp_pred, nrow=5), step)
                 writer.add_image('train_fgr_pred', make_grid(fgr_pred, nrow=5), step)
                 writer.add_image('train_com_pred', make_grid(fgr_pred * alp_pred, nrow=5), step)
@@ -147,7 +179,7 @@ def main(train_rgb_path,
             del alp_pred, fgr_pred, alp_coarse_pred, fgr_coarse_pred, err_coarse_pred
 
             #validation
-            if (i+1) % 50 == 0:             
+            if (i+1) % 5000 == 0:             
                 model.eval()
                 loss_total = 0
                 count = 0
@@ -175,7 +207,7 @@ def main(train_rgb_path,
                         """
                     writer.add_scalar('valid_loss', loss_total / count, step)
 
-            if (step + 1) % 50 == 0:
+            if (step + 1) % 5000 == 0:
                 torch.save(model.state_dict(), checkpoint_path + f'/checkpoint_epoch{epoch}_iter{step}.pth')
 
         torch.save(model.state_dict(), checkpoint_path + f'/checkpoint_epoch{epoch}.pth')

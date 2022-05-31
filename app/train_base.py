@@ -31,7 +31,7 @@ def main(train_rgb_path,
         num_workers, 
         pretrained_model, 
         epochs):
-    device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     print("device : "+str(device))
 
     #train dataset
@@ -109,9 +109,40 @@ def main(train_rgb_path,
             alp_in = alp_in.to(device)
             bck_in = bck_in.to(device)
             fgr_in, alp_in, bck_in = random_corp(fgr_in, alp_in, bck_in)
+
+            src_in = bck_in.clone()
+
+            #background shadow augumentation (same as original code)
+            aug_shadow_index = torch.rand(len(src_in)) < 0.3
+            if aug_shadow_index.any():
+                aug_shadow = alp_in[aug_shadow_index].mul(0.3 * random.random())
+                aug_shadow = T.RandomAffine(degrees=(-5, 5), translate=(0.2, 0.2), scale=(0.5, 1.5), shear=(-5, 5))(aug_shadow)
+                aug_shadow = kornia.filters.box_blur(aug_shadow, (random.choice(range(20, 40)),) * 2)
+                src_in[aug_shadow_index] = src_in[aug_shadow_index].sub_(aug_shadow).clamp_(0, 1)
+                del aug_shadow
+            del aug_shadow_index
             
             #composite foreground residual onto background
-            src_in = fgr_in * alp_in + bck_in * (1 - alp_in)
+            src_in = fgr_in * alp_in + src_in * (1 - alp_in)
+
+            #noise augumentation (same as original code)
+            aug_noise_index = torch.rand(len(src_in)) < 0.4
+            if aug_noise_index.any():
+                src_in[aug_noise_index] = src_in[aug_noise_index].add_(torch.randn_like(src_in[aug_noise_index]).mul_(0.03 * random.random())).clamp_(0, 1)
+                bck_in[aug_noise_index] = bck_in[aug_noise_index].add_(torch.randn_like(bck_in[aug_noise_index]).mul_(0.03 * random.random())).clamp_(0, 1)
+            del aug_noise_index
+
+            #background jitter augumentation
+            aug_jitter_index = torch.rand(len(src_in)) < 0.8
+            if aug_jitter_index.any():
+                bck_in[aug_jitter_index] = kornia.augmentation.ColorJitter(0.18, 0.18, 0.18, 0.1)(bck_in[aug_jitter_index])
+            del aug_jitter_index
+
+            #background affine augumentation
+            aug_affine_index = torch.rand(len(bck_in)) < 0.3
+            if aug_affine_index.any():
+                bck_in[aug_affine_index] = T.RandomAffine(degrees=(-1, 1), translate=(0.01, 0.01))(bck_in[aug_affine_index])
+            del aug_affine_index
 
             alp_pred, fgr_pred, err_pred = model(src_in, bck_in)[:3]
             loss = calc_loss(alp_pred, fgr_pred, err_pred, alp_in, fgr_in)

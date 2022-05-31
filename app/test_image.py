@@ -53,14 +53,7 @@ def main(src_path, bck_path, pretrained_model, output_path, output_type):
             filename = image_rgb_bck.img_dataset.filenames[i]
             filename = os.path.relpath(filename, args.src_path)
             filename = os.path.splitext(filename)[0]
-            """
-            filepath = os.path.join(output_path, filename + '_src.jpg')
-            src_img = to_pil_image(src[0])
-            src_img.save(filepath)
-            filepath = os.path.join(output_path, filename + '_bck.jpg')
-            bck_img = to_pil_image(bck[0])
-            bck_img.save(filepath)
-            """
+
             alp, fgr, _, _, err, ref = model(src, bck)
             
             if 'com' in output_type:
