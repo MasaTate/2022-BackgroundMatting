@@ -13,13 +13,16 @@ from torchvision.transforms.functional import to_pil_image
 from models.model import WholeNet
 
 def main(src_path, bck_path, pretrained_model, output_path, output_type):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
     print("device : "+str(device))
 
     #prepare dataset
-    image_rgb_data = ImageDataset(src_path,"RGB") #foreground data
-    image_bck_data = ImageDataset(bck_path,"RGB") #alpha matte data
+    image_rgb_data = ImageDataset(src_path,"RGB") #source data
+    image_bck_data = ImageDataset(bck_path,"RGB",transforms=T.RandomRotation(degrees=(180,180))) #background data
     image_rgb_bck = ConcatImgBck(image_rgb_data, image_bck_data, transforms=A.PairCompose([A.PairApply(nn.Identity()), A.PairApply(T.ToTensor())]))
+    print(image_rgb_bck[0])
+    back = image_bck_data[0]
+    back.save("../result/back.jpg")
 
     test_dataset = DataLoader(image_rgb_bck, batch_size=1, pin_memory=True)
 
@@ -50,12 +53,22 @@ def main(src_path, bck_path, pretrained_model, output_path, output_type):
             src = src.to(device)
             bck = bck.to(device)
 
-            alp, fgr, _, _, err, ref = model(src, bck)
-
             filename = image_rgb_bck.img_dataset.filenames[i]
             filename = os.path.relpath(filename, args.src_path)
             filename = os.path.splitext(filename)[0]
+            
+            filepath = os.path.join(output_path, filename + '_src.jpg')
+            src_img = to_pil_image(src[0])
+            src_img.save(filepath)
+            filepath = os.path.join(output_path, filename + '_bck.jpg')
+            bck_img = to_pil_image(bck[0])
+            bck_img.save(filepath)
 
+            alp, fgr, _, _, err, ref = model(src, bck)
+
+            
+
+            
             if 'com' in output_type:
                 com = torch.cat([fgr * alp.ne(0), alp], dim=1)
                 filepath = os.path.join(output_path, filename + '_com.png')
