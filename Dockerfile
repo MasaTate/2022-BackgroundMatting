@@ -21,6 +21,7 @@ RUN pip3 install matplotlib
 RUN pip3 install imageio
 RUN pip3 install tqdm
 RUN pip3 install imageio-ffmpeg
+RUN pip3 install kornia
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y libgl1-mesa-dev
 RUN apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6
