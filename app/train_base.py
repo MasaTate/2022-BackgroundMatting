@@ -214,12 +214,12 @@ def random_corp(*images):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train_rgb_path", help="foreground data path for training", type=str, default="../data/VideoMatte240K_JPEG_HD/train/fgr")
-    parser.add_argument("--train_alp_path", help="alpha matte data path for training", type=str, default="../data/VideoMatte240K_JPEG_HD/train/pha")
-    parser.add_argument("--train_bck_path", help="background data path for training", type=str, default="../data/Backgrounds/train")
-    parser.add_argument("--valid_rgb_path", help="foreground data path for validation", type=str, default="../data/VideoMatte240K_JPEG_HD/test/fgr")
-    parser.add_argument("--valid_alp_path", help="alpha matte data path for validation", type=str, default="../data/VideoMatte240K_JPEG_HD/test/pha")
-    parser.add_argument("--valid_bck_path", help="background data path for validation", type=str, default="../data/Backgrounds/test")
+    parser.add_argument("--train_rgb_path", help="foreground data directory path for training", type=str, default="../data/VideoMatte240K_JPEG_HD/train/fgr")
+    parser.add_argument("--train_alp_path", help="alpha matte data directory path for training", type=str, default="../data/VideoMatte240K_JPEG_HD/train/pha")
+    parser.add_argument("--train_bck_path", help="background data directory path for training", type=str, default="../data/Backgrounds/train")
+    parser.add_argument("--valid_rgb_path", help="foreground data directory path for validation", type=str, default="../data/VideoMatte240K_JPEG_HD/test/fgr")
+    parser.add_argument("--valid_alp_path", help="alpha matte data directory path for validation", type=str, default="../data/VideoMatte240K_JPEG_HD/test/pha")
+    parser.add_argument("--valid_bck_path", help="background data directory path for validation", type=str, default="../data/Backgrounds/test")
     parser.add_argument("--checkpoint_path", help="checkpoint saving dir path", type=str, default="../result/checkpoint/basenet")
     parser.add_argument("--logging_path", help="path to save logs", type=str, default="../logs/basenet")      
     parser.add_argument("--batch_size", help="batch size", type=int, default=8)

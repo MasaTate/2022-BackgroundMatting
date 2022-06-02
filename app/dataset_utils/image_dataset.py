@@ -9,6 +9,7 @@ class ImageDataset(Dataset):
         self.mode = mode
         self.filenames = sorted([*glob.glob(os.path.join(root_pth, '**', '*.jpg'), recursive=True),
                                     *glob.glob(os.path.join(root_pth, '**', '*.png'), recursive=True)])
+        assert len(self.filenames) > 0
     
     def __len__(self):
         return len(self.filenames)

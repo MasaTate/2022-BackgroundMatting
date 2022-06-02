@@ -88,11 +88,12 @@ def main(src_path, bck_path, pretrained_model, output_path, output_type):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("src_path", help="source image/dir path", type=str)
-    parser.add_argument("bck_path", help="background image/dir path", type=str)
-    parser.add_argument("--pretrained_model", help="pretrained model path", type=str, default="../result/checkpoint/refinenet/checkpoint_epoch0.pth")
-    parser.add_argument("--output_path", help="output path", type=str, default="../result/images")
+    parser.add_argument("src_path", help="source directory path", type=str)
+    parser.add_argument("bck_path", help="background directory path", type=str)
     parser.add_argument("output_type", help="choose output types from [composite layer, alpha matte, foreground residual, error map, reference map", nargs='*', choices=['com', 'alp', 'fgr', 'err', 'ref'])
+    parser.add_argument("--pretrained_model", help="pretrained model path", type=str, default="../result/checkpoint/refinenet/checkpoint_epoch0_iter54999.pth")
+    parser.add_argument("--output_path", help="output directory path", type=str, default="../result/images")
+    
 
     args = parser.parse_args()
 
