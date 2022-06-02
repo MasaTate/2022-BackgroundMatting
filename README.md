@@ -5,7 +5,8 @@ I used pretrained weights of DeepLabV3 from [VainF](https://github.com/VainF/Dee
 
 ## Requirements
 I share anaconda environment yml file.
-Create environment by `conda env create -n $ENV_NAME -f py38torch1110.yml`
+Create environment by `conda env create -n $ENV_NAME -f py38torch1110.yml`  
+You can also check requirements from the yml file.
 
 
 ## Usage
