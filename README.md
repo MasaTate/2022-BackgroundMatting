@@ -79,6 +79,7 @@ optional arguments:
   ```
 
 ### Test Image Background Matting
+You can download my trained weight form [here]().  
 Using trained weight, you can test image background matting.  
 Make sure that related image and background data are same order in each directory.
 ```

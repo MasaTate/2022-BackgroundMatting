@@ -103,7 +103,7 @@ def main(train_rgb_path,
 
     #checkpoint dir
     if not os.path.exists(checkpoint_path):
-            os.mkdir(checkpoint_path)
+            os.makedirs(checkpoint_path)
     #logging
     writer = SummaryWriter(logging_path)
 
