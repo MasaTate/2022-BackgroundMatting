@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: conda-incubator/setup-miniconda@v2
+    - uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: BackgroundMatting
         environment-file: py38torch1110.yml
