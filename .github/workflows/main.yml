@@ -27,4 +27,4 @@ jobs:
 
     - name: Check versions
       run: |
-        python3 -c "import sys; import torch; print(sys.version_info); print(torch.__version__)"
+        python3 -c "import sys; import torch; print(sys.version_info); print("torch:"+str(torch.__version__))"
