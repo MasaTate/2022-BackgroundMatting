@@ -1,0 +1,30 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Python package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: BackgroundMatting
+        environment-file: py38torch1110.yml
+        python-version: 3.8
+
+    - name: Check versions
+      run: |
+        python3 -c "import sys; import torch; print(sys.version_info); print("torch:"+str(torch.__version__))"
