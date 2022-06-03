@@ -1,5 +1,5 @@
 # 2022-BackgroundMatting
-This repository is for `Real-Time High-Resolution Background Matting, CVPR 2021`([pdf](https://openaccess.thecvf.com/content/CVPR2021/papers/Lin_Real-Time_High-Resolution_Background_Matting_CVPR_2021_paper.pdf)) implementation.  
+This repository is for `Real-Time High-Resolution Background Matting, CVPR 2021`([pdf](https://openaccess.thecvf.com/content/CVPR2021/papers/Lin_Real-Time_High-Resolution_Background_Matting_CVPR_2021_paper.pdf)) reimplementation.  
 I referred to the [official implementaion](https://github.com/PeterL1n/BackgroundMattingV2) in PyTorch.  
 I used pretrained weights of DeepLabV3 from [VainF](https://github.com/VainF/DeepLabV3Plus-Pytorch).
 
@@ -79,7 +79,7 @@ optional arguments:
   ```
 
 ### Test Image Background Matting
-You can download my trained weight form [here]().  
+You can download my trained weight form [here](https://drive.google.com/drive/folders/1UnoNk7fp44PyDsyfdnIc6-wAzNxP9xgn?usp=sharing).  
 Using trained weight, you can test image background matting.  
 Make sure that related image and background data are same order in each directory.
 ```
