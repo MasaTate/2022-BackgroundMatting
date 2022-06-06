@@ -31,7 +31,7 @@ def main(train_rgb_path,
         num_workers, 
         pretrained_model, 
         epochs):
-    device = torch.device('cuda:3' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print("device : "+str(device))
 
     #train dataset
@@ -113,6 +113,8 @@ def main(train_rgb_path,
         print(f'epoch : {epoch}')
         print("training epoch")
         for i, ((fgr_in, alp_in), bck_in) in enumerate(tqdm(training_dataset)):
+            if fgr_in.shape[0] == 1:
+                break
             #training
             model.train()
             step = epoch * len(training_dataset) + i
