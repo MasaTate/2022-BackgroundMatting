@@ -14,7 +14,7 @@ from torchvision.transforms.functional import to_pil_image
 from models.model import WholeNet
 
 def main(src_path, bck_path, pretrained_model, output_path, output_type):
-    device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print("device : "+str(device))
 
     #prepare dataset
@@ -94,9 +94,11 @@ def main(src_path, bck_path, pretrained_model, output_path, output_type):
                 ref = to_pil_image(ref[0])
                 ref.save(filepath)
                 print("saved "+filepath)
-
-    avg_time = sum(times) / len(times)
-    print(f"Average matting time: {avg_time}")
+    
+    if len(times)>1:
+        times.pop(0) #ignore first inference time because it is flawed for unknown reason
+        avg_time = sum(times) / len(times)
+        print(f"Average matting time: {avg_time}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
