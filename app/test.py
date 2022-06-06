@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torchvision import transforms as T
 from torchvision.utils import make_grid
+from torchvision.transforms.functional import to_pil_image
 from PIL import Image
 from dataset_utils.image_dataset import ImageDataset
 from dataset_utils.concat_rgb_alp import ConcatRGBAlp
@@ -16,9 +17,10 @@ import argparse
 import random
 import kornia
 import os
+import time
 from tqdm import tqdm
 from models.model import WholeNet
-from torchvision.transforms.functional import to_pil_image
+
 
 def main(train_rgb_path,
         train_alp_path,

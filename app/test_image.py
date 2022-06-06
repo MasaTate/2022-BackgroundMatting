@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -44,6 +45,8 @@ def main(src_path, bck_path, pretrained_model, output_path, output_type):
         os.makedirs(output_path)
         print("created output dir : "+output_path)
     print("========start inference=========")
+    #Timer
+    times = []
     #inference
     with torch.no_grad():
         for i ,(src, bck) in enumerate(tqdm(test_dataset)):
@@ -53,8 +56,15 @@ def main(src_path, bck_path, pretrained_model, output_path, output_type):
             filename = image_rgb_bck.img_dataset.filenames[i]
             filename = os.path.relpath(filename, args.src_path)
             filename = os.path.splitext(filename)[0]
-
+            
+            #start timer
+            tic = time.perf_counter()
+            #inference
             alp, fgr, _, _, err, ref = model(src, bck)
+            #stop timer
+            toc = time.perf_counter()
+            print(f'Matting time: {toc-tic} sec')
+            times.append(toc-tic)
             
             if 'com' in output_type:
                 com = torch.cat([fgr * alp.ne(0), alp], dim=1)
@@ -84,6 +94,9 @@ def main(src_path, bck_path, pretrained_model, output_path, output_type):
                 ref = to_pil_image(ref[0])
                 ref.save(filepath)
                 print("saved "+filepath)
+
+    avg_time = sum(times) / len(times)
+    print(f"Average matting time: {avg_time}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
