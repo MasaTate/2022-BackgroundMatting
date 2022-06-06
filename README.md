@@ -104,7 +104,10 @@ optional arguments:
 Limited datasets are available on the [official website](https://grail.cs.washington.edu/projects/background-matting-v2/#/datasets).
 
 ## Examples
-
+|![5_src](https://user-images.githubusercontent.com/45582330/172120943-d560d03d-e7a7-4931-af07-b9e1f4da74ed.png)|![5_alp](https://user-images.githubusercontent.com/45582330/172120967-5283aee2-3654-48a1-b8d8-0414c7128e2c.jpg)|![5_com](https://user-images.githubusercontent.com/45582330/172121008-cc32b344-95bc-44d0-b649-be646bb54778.png)|
+|---|---|---|
+|![14_src](https://user-images.githubusercontent.com/45582330/172121415-de1a4ceb-5b23-44d1-b081-fd6a21520543.png)|![14_alp](https://user-images.githubusercontent.com/45582330/172121437-96f10d1d-828f-428c-9828-5e977d5d6ce4.jpg)|![14_com](https://user-images.githubusercontent.com/45582330/172121451-19b902eb-8ef7-403d-b44f-d17e557b3037.png)|
+|source image|predicted alpha matte|predicted foreground|
 
 ## References
 - S.Lin, A.Ryabtsev, S.Sengupta, B.Curless, S.Seitz, I.Kemelmacher-Shlizerman. "Real-Time High-Resolution Background Matting.", in CVPR, 2021. ([pdf](https://openaccess.thecvf.com/content/CVPR2021/papers/Lin_Real-Time_High-Resolution_Background_Matting_CVPR_2021_paper.pdf))
